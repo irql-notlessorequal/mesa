@@ -3172,6 +3172,39 @@ crocus_set_sampler_views(struct pipe_context *ctx,
    ice->state.stage_dirty |= ice->state.stage_dirty_for_nos[CROCUS_NOS_TEXTURES];
 }
 
+static void
+crocus_set_global_binding(struct pipe_context *ctx,
+                        unsigned start_slot, unsigned count,
+                        struct pipe_resource **resources,
+                        uint32_t **handles)
+{
+   struct crocus_context *ice = (struct crocus_context *) ctx;
+
+   assert(start_slot + count <= CROCUS_MAX_GLOBAL_BINDINGS);
+
+   for (unsigned i = 0; i < count; i++) {
+      if (resources && resources[i]) {
+         pipe_resource_reference(&ice->state.global_bindings[start_slot + i],
+                                 resources[i]);
+
+         struct crocus_resource *res = (void *) resources[i];
+         assert(res->base.b.target == PIPE_BUFFER);
+         util_range_add(&res->base.b, &res->valid_buffer_range,
+                        0, res->base.b.width0);
+
+         uint64_t addr = 0;
+         memcpy(&addr, handles[i], sizeof(addr));
+         addr += res->bo->gtt_offset + res->offset;
+         memcpy(handles[i], &addr, sizeof(addr));
+      } else {
+         pipe_resource_reference(&ice->state.global_bindings[start_slot + i],
+                                 NULL);
+      }
+   }
+
+   ice->state.stage_dirty |= CROCUS_STAGE_DIRTY_BINDINGS_CS;
+}
+
 /**
  * The pipe->set_tess_state() driver hook.
  */
@@ -8057,6 +8090,19 @@ crocus_upload_render_state(struct crocus_context *ice,
 #if GFX_VER >= 7
 
 static void
+crocus_use_global_bindings(struct crocus_context *ice,
+                         struct crocus_batch *batch)
+{
+   for (unsigned i = 0; i < CROCUS_MAX_GLOBAL_BINDINGS; i++) {
+      struct pipe_resource *res = ice->state.global_bindings[i];
+      if (!res)
+         continue;
+
+      crocus_use_bo(batch, crocus_resource_bo(res), true);
+   }
+}
+
+static void
 crocus_upload_compute_state(struct crocus_context *ice,
                             struct crocus_batch *batch,
                             const struct pipe_grid_info *grid)
@@ -8086,6 +8132,8 @@ crocus_upload_compute_state(struct crocus_context *ice,
 
    if (stage_dirty & CROCUS_STAGE_DIRTY_SAMPLER_STATES_CS)
       crocus_upload_sampler_states(ice, batch, MESA_SHADER_COMPUTE);
+
+   crocus_use_global_bindings(ice, batch);
 
    if ((stage_dirty & CROCUS_STAGE_DIRTY_CS) ||
        cs_prog_data->local_size[0] == 0 /* Variable local group size */) {
@@ -9278,6 +9326,7 @@ genX(crocus_init_state)(struct crocus_context *ice)
    ctx->set_shader_buffers = crocus_set_shader_buffers;
    ctx->set_shader_images = crocus_set_shader_images;
    ctx->set_sampler_views = crocus_set_sampler_views;
+   ctx->set_global_binding = crocus_set_global_binding;
    ctx->set_tess_state = crocus_set_tess_state;
    ctx->set_patch_vertices = crocus_set_patch_vertices;
    ctx->set_framebuffer_state = crocus_set_framebuffer_state;

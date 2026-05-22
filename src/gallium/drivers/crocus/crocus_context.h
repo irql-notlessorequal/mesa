@@ -49,6 +49,7 @@ struct blorp_params;
 #define CROCUS_MAX_SSBOS 16
 #define CROCUS_MAX_VIEWPORTS 16
 #define CROCUS_MAX_CLIP_PLANES 8
+#define CROCUS_MAX_GLOBAL_BINDINGS 128
 
 enum crocus_param_domain {
    ELK_PARAM_DOMAIN_BUILTIN = 0,
@@ -642,6 +643,9 @@ struct crocus_context {
 
       /** Do vertex shader uses edge flag ? */
       bool vs_needs_edge_flag;
+
+      /** Global resource bindings */
+      struct pipe_resource *global_bindings[CROCUS_MAX_GLOBAL_BINDINGS];
 
       struct pipe_stream_output_target *so_target[PIPE_MAX_SO_BUFFERS];
       bool streamout_active;
