@@ -688,7 +688,9 @@ elk_nir_optimize(nir_shader *nir, bool is_scalar,
 
       OPT(nir_opt_copy_prop);
       OPT(nir_opt_dce);
+#if 0
       OPT(nir_opt_cse);
+#endif
       OPT(nir_opt_combine_stores, nir_var_all);
 
       /* Passing 0 to the peephole select pass causes it to convert
