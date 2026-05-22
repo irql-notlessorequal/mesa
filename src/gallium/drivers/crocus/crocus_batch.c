@@ -301,7 +301,7 @@ ensure_exec_obj_space(struct crocus_batch *batch, uint32_t count)
    }
 }
 
-static struct drm_i915_gem_exec_object2 *
+struct drm_i915_gem_exec_object2 *
 crocus_use_bo(struct crocus_batch *batch, struct crocus_bo *bo, bool writable)
 {
    assert(bo->bufmgr == batch->command.bo->bufmgr);

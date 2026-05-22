@@ -200,8 +200,9 @@ bool crocus_batch_prepare_noop(struct crocus_batch *batch, bool noop_enable);
 /* Inverted meaning, but using the same bit...emit_reloc will flip it. */
 #define RELOC_32BIT EXEC_OBJECT_SUPPORTS_48B_ADDRESS
 
-void crocus_use_pinned_bo(struct crocus_batch *batch, struct crocus_bo *bo,
-                          bool writable);
+struct drm_i915_gem_exec_object2 *
+crocus_use_bo(struct crocus_batch *batch, struct crocus_bo *bo, bool writable);
+
 uint64_t crocus_command_reloc(struct crocus_batch *batch, uint32_t batch_offset,
                               struct crocus_bo *target, uint32_t target_offset,
                               unsigned int reloc_flags);
