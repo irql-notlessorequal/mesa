@@ -208,6 +208,9 @@ crocus_init_compute_caps(struct crocus_screen *screen)
 
    caps->grid_dimension = 3;
 
+   caps->max_clock_frequency = 1000; /* TODO */
+   caps->max_compute_units = intel_device_info_subslice_total(devinfo); 
+
    caps->max_grid_size[0] =
    caps->max_grid_size[1] =
    caps->max_grid_size[2] = 65535;
@@ -218,14 +221,16 @@ crocus_init_compute_caps(struct crocus_screen *screen)
    caps->max_block_size[2] = max_invocations;
 
    /* MaxComputeWorkGroupInvocations */
-   caps->max_threads_per_block = max_invocations;
+   caps->max_threads_per_block =
+   /* MaxComputeVariableGroupInvocations */
+   caps->max_variable_threads_per_block = max_invocations;
 
    /* MaxComputeSharedMemorySize */
    caps->max_local_size = 64 * 1024;
 
-   caps->subgroup_sizes = ELK_SUBGROUP_SIZE;
+   caps->max_subgroups = devinfo->max_cs_workgroup_threads;
 
-   caps->max_variable_threads_per_block = max_invocations;
+   caps->subgroup_sizes = ELK_SUBGROUP_SIZE;
 }
 
 static void
