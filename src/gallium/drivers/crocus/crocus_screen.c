@@ -485,6 +485,23 @@ static void
 crocus_query_memory_info(struct pipe_screen *pscreen,
                          struct pipe_memory_info *info)
 {
+   struct crocus_screen *screen = (struct crocus_screen *) pscreen;
+   struct intel_device_info di;
+   memcpy(&di, &screen->devinfo, sizeof(di));
+
+   if (!intel_device_info_update_memory_info(&di, screen->fd))
+      return;
+
+   info->total_device_memory =
+      (di.mem.vram.mappable.size + di.mem.vram.unmappable.size) / 1024;
+   info->avail_device_memory =
+      (di.mem.vram.mappable.free + di.mem.vram.unmappable.free) / 1024;
+   info->total_staging_memory = di.mem.sram.mappable.size / 1024;
+   info->avail_staging_memory = di.mem.sram.mappable.free / 1024;
+
+   /* Neither kernel gives us any way to calculate this information */
+   info->device_memory_evicted = 0;
+   info->nr_device_memory_evictions = 0;
 }
 
 static struct disk_cache *
