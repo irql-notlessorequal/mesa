@@ -230,6 +230,9 @@ crocus_init_compute_caps(struct crocus_screen *screen)
 
    caps->max_subgroups = devinfo->max_cs_workgroup_threads;
 
+   caps->max_mem_alloc_size =
+   caps->max_global_size = 1 << 30; /* TODO */
+
    caps->subgroup_sizes = ELK_SUBGROUP_SIZE;
 }
 
