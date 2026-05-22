@@ -2595,6 +2595,8 @@ crocus_update_compiled_cs(struct crocus_context *ice)
    if (!shader)
       shader = crocus_compile_cs(ice, ish, &key);
 
+   ish->scratch_size = ish->nir->scratch_size;
+
    if (old != shader) {
       ice->shaders.prog[CROCUS_CACHE_CS] = shader;
       ice->state.stage_dirty |= CROCUS_STAGE_DIRTY_CS |
@@ -2716,6 +2718,19 @@ crocus_create_uncompiled_shader(struct pipe_context *ctx,
    }
 
    return ish;
+}
+
+static void
+crocus_get_compute_state_info(struct pipe_context *ctx, void *state,
+                            struct pipe_compute_state_object_info *info)
+{
+   struct crocus_screen *screen = (void *) ctx->screen;
+   struct crocus_uncompiled_shader *ish = state;
+
+   info->max_threads = MIN2(1024, 32 * screen->devinfo.max_cs_workgroup_threads);
+   info->private_memory = ish->scratch_size;
+   info->preferred_simd_size = 32;
+   info->simd_sizes = 8 | 16 | 32;
 }
 
 static struct crocus_uncompiled_shader *
@@ -2914,6 +2929,8 @@ crocus_create_compute_state(struct pipe_context *ctx,
 
       if (!crocus_disk_cache_retrieve(ice, ish, &key, sizeof(key)))
          crocus_compile_cs(ice, ish, &key);
+
+      ish->scratch_size = ish->nir->scratch_size;
    }
 
    return ish;
@@ -3130,4 +3147,6 @@ crocus_init_program_functions(struct pipe_context *ctx)
    ctx->bind_gs_state  = crocus_bind_gs_state;
    ctx->bind_fs_state  = crocus_bind_fs_state;
    ctx->bind_compute_state = crocus_bind_cs_state;
+
+   ctx->get_compute_state_info = crocus_get_compute_state_info;
 }

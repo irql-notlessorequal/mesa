@@ -321,6 +321,8 @@ struct crocus_uncompiled_shader {
 
    bool needs_edge_flag;
 
+   uint32_t scratch_size;
+
    /** Constant data scraped from the shader by nir_opt_large_constants */
    struct pipe_resource *const_data;
 
