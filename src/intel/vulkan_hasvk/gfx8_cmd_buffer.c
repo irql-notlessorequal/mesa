@@ -387,6 +387,9 @@ genX(cmd_buffer_flush_dynamic_state)(struct anv_cmd_buffer *cmd_buffer)
       bool has_writeable_rt =
          anv_pipeline_has_stage(pipeline, MESA_SHADER_FRAGMENT) &&
          (color_writes & ((1u << state->color_att_count) - 1)) != 0;
+      const bool dither_enable =
+         cmd_buffer->state.gfx.rendering_flags &
+         VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT;
 
       /* 3DSTATE_PS_BLEND to be consistent with the rest of the
        * BLEND_STATE_ENTRY.
@@ -405,7 +408,11 @@ genX(cmd_buffer_flush_dynamic_state)(struct anv_cmd_buffer *cmd_buffer)
       uint32_t *dws = blend_dws;
       memset(blend_dws, 0, sizeof(blend_dws));
 
-      /* Skip this part */
+      struct GENX(BLEND_STATE) blend = {
+         .ColorDitherEnable = dither_enable,
+      };
+      GENX(BLEND_STATE_pack)(NULL, blend_dws, &blend);
+
       dws += GENX(BLEND_STATE_length);
 
       for (uint32_t i = 0; i < MAX_RTS; i++) {
