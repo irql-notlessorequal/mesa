@@ -265,6 +265,9 @@ genX(cmd_buffer_flush_dynamic_state)(struct anv_cmd_buffer *cmd_buffer)
        BITSET_TEST(dyn->dirty, MESA_VK_DYNAMIC_CB_LOGIC_OP) ||
        BITSET_TEST(dyn->dirty, MESA_VK_DYNAMIC_CB_COLOR_WRITE_ENABLES)) {
       const uint8_t color_writes = dyn->cb.color_write_enables;
+      const bool dither_enable =
+         cmd_buffer->state.gfx.rendering_flags &
+         VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT;
 
       /* Blend states of each RT */
       uint32_t blend_dws[GENX(BLEND_STATE_length) +
@@ -293,6 +296,7 @@ genX(cmd_buffer_flush_dynamic_state)(struct anv_cmd_buffer *cmd_buffer)
                                  (pipeline->color_comp_writes[i] &
                                   VK_COLOR_COMPONENT_B_BIT) == 0,
             .LogicOpFunction   = genX(vk_to_intel_logic_op)[dyn->cb.logic_op],
+            .ColorDitherEnable = dither_enable,
          };
          GENX(BLEND_STATE_ENTRY_pack)(NULL, dws, &entry);
          dws += GENX(BLEND_STATE_ENTRY_length);
