@@ -830,13 +830,19 @@ is_dual_src_blend_factor(VkBlendFactor factor)
 }
 
 static inline uint32_t *
-write_disabled_blend(uint32_t *state)
+write_disabled_blend(uint32_t *state, bool dither)
 {
+#if GFX_VER == 8
+   (void) dither;
+#endif
    struct GENX(BLEND_STATE_ENTRY) entry = {
       .WriteDisableAlpha = true,
       .WriteDisableRed = true,
       .WriteDisableGreen = true,
       .WriteDisableBlue = true,
+#if GFX_VER < 8
+      .ColorDitherEnable = dither,
+#endif
    };
    GENX(BLEND_STATE_ENTRY_pack)(NULL, state, &entry);
    return state + GENX(BLEND_STATE_ENTRY_length);
@@ -850,11 +856,14 @@ emit_cb_state(struct anv_graphics_pipeline *pipeline,
 {
    struct anv_device *device = pipeline->base.device;
    const struct elk_fs_prog_data *fs_prog_data = get_fs_prog_data(pipeline);
+   const bool dither_enable = pipeline->base.flags &
+         VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT;
 
    struct GENX(BLEND_STATE) blend_state = {
 #if GFX_VER >= 8
       .AlphaToCoverageEnable = ms && ms->alpha_to_coverage_enable,
       .AlphaToOneEnable = ms && ms->alpha_to_one_enable,
+      .ColorDitherEnable = dither_enable,
 #endif
    };
 
@@ -885,7 +894,7 @@ emit_cb_state(struct anv_graphics_pipeline *pipeline,
       assert(i < MAX_RTS);
 
       if (cb == NULL || binding->index >= cb->attachment_count) {
-         state_pos = write_disabled_blend(state_pos);
+         state_pos = write_disabled_blend(state_pos, dither_enable);
          continue;
       }
 
@@ -900,6 +909,7 @@ emit_cb_state(struct anv_graphics_pipeline *pipeline,
 #if GFX_VER < 8
          .AlphaToCoverageEnable = ms && ms->alpha_to_coverage_enable,
          .AlphaToOneEnable = ms && ms->alpha_to_one_enable,
+         .ColorDitherEnable = dither_enable,
 #endif
          .LogicOpEnable = cb->logic_op_enable && !ignore_logic_op,
 
